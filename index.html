@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/style.css">
+    <title>Document</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="all"></div>
+    <div id="light"></div>
+    <div id="eyes"></div>
+    <audio src="./music/tvsound.mp3" id="tvsound"></audio>
+    <audio src="./music/click.mp3" id="click"></audio>
+    <audio src="./music/mode.mp3" id="modemp3"></audio>
+    <audio src="./music/故障.mp3" id="broken" loop></audio>
+    <audio src="./music/當愛已成往事.mp3" id="music" loop></audio>
+    <div id="TV">
+        <div id="head"></div>
+        <div id="top-shadow"></div>
+        <div id="menu">
+            <div id="time">
+                <div id="time-text">00:00</div>
+            </div>
+            <div id="mode-circle">
+                <div id="mode"></div>
+            </div>
+            <div id="channel">
+                <div id="channel-text">台灣美食趣</div>
+            </div>
+            <input type="checkbox" id="background-music" style="display: none;">
+            <label for="background-music">♫</label>
+            <div id="left-music"></div>
+            <div id="right-music"></div>
+            <input type="checkbox" id="open" style="display: none;">
+            <label for="open"></label>
+            <div id="decoration"></div>
+        </div>
+        <div id="game">
+            <div id="screen" class="turnon"></div>
+            <input type="button" value="再來一次" id="again" style="display: none;">
+        </div>
+        <div id="left-foot"></div>
+        <div id="right-foot"></div>
+    </div>
+    <div id="table"></div>
+    <div id="table-shadow"></div>
+    <script src="./others/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+
+        function rand(min, max) {
+            return Math.round(Math.random() * (max - min)) + min
+        }
+        // name 代入 'food' 或 'attractions'
+        // number 代入該種類資料夾裡面的組數
+        // random(number, name)：會去 images 資料夾中的 name 的資料夾裡面的 number 組卡牌中，隨機取出 8 組 ( 16 張)，顯示在畫面上並打散
+        function random(number, name) {
+            for (let i = 0; i < 16; i++) {
+                $('#game').append(`
+                <div class="card card-close ">
+                    <div class="card-front"></div>
+                    <div class="card-back"></div>
+                </div>
+            `)
+            }
+            // 改變卡牌背面的圖片
+            $('.card-back ').css('background-image', `url(./images/${name}_back.png)`)
+
+            // 這裡參考威力彩作業亂數取不同數字的部分
+            const group = []
+            const numbers = []
+            // 把 1~number的數字存入 numbers陣列中
+            for (let i = 1; i <= number; i++) {
+                numbers.push(i)
+            }
+            for (let i = 0; i < 8; i++) {
+                const index = rand(0, numbers.length - 1)
+                group.push(numbers[index])
+                numbers.splice(index, 1)
+            }
+
+            let j = 0
+            for (let i = 0; i < 16; i += 2) {
+                const num = i / 2
+                $('.card').eq(i).find('.card-front').css('background-image', `url(./images/` + name + `/` + group[j] + `-1.png)`)
+                $('.card').eq(i).attr('data-card', num)
+                $('.card').eq(i + 1).find('.card-front').css('background-image', `url(./images/` + name + `/` + group[j] + `-2.png)`)
+                $('.card').eq(i + 1).attr('data-card', num)
+                j++
+            }
+            for (let i = 0; i < 16; i++) {
+                const target = Math.round(Math.random() * 15)
+                $('.card').eq(target).insertAfter($('.card').eq(i))
+            }
+        }
+        Swal.fire({
+            html: '<div class="align-left">你不知道這裡是哪裡，也不記得你為什麼會出現在這裡，眼前除了一台古早的電視機外什麼都沒有。<br>......如果不把那隱隱約約的窺伺感算進去的話。</div>',
+            confirmButtonText: '繼續'
+        }).then(function () {
+            $('#music')[0].play()
+            $('#broken')[0].play()
+            $('#background-music').prop('checked', true)
+            timer = setInterval(function () {
+                seconds++
+                if (seconds > 59) {
+                    seconds = 0
+                    minutes++
+                }
+                $('#time-text').text(String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0'))
+            }, 1000)
+        })
+
+
+        $('#click')[0].volume = 0.3
+
+        // tvmode=0(食物) tvmode=1(景點)
+        let tvmode = 0
+        // tv=open(電視在打開的狀態) tv=close(電視在關閉的狀態)
+        let tv = 'open'
+        // 以下預設都是 0
+        let i = 0
+        let timer = 0
+        let seconds = 0
+        let minutes = 0
+        // 來算播放第幾首歌
+        let musicCount = 0
+        // 歌單
+        const musicList = ['當愛已成往事', '魂縈舊夢', '月兒彎彎照九州', '何日君再來', '夜來香', '恨不相逢未嫁時']
+        let first = new Boolean(false)
+        let second = new Boolean(false)
+        // 預設為 food
+        random(17, 'food')
+        // 點擊紅色小按鈕
+        $('#open').click(function () {
+            // 如果電視原本在打開的狀態，按一下後把他關起來，tv='close'
+            // 關起來後把螢幕畫面所有的東西移出(因為關掉電視不會有畫面)
+            // 並停止計時器，把分和秒都清除成0，再將文字替換成 00:00
+            $('#again').css('display', 'none')
+            if (tv === 'open') {
+                tv = 'close'
+                // 把舊的卡牌移除
+                $('#game .card').remove()
+                // 終止計時器
+                clearInterval(timer)
+                // 時間歸零
+                seconds = 0
+                minutes = 0
+                $('#time-text').text('00:00')
+                // 節目文字
+                $('#channel-text').text('').addClass('fadeout').removeClass('fadein')
+            } else {
+                // 若電視原本在關閉的狀態，按一下後會把他打開，tv='open'
+                tv = 'open'
+                // 若是電視在food頻道，則載入food頻道的卡牌
+                if (tvmode === 0) {
+                    random(17, 'food')
+                    $('#channel-text').text('台灣美食趣').addClass('fadein').removeClass('fadeout')
+                }
+                else {
+                    random(19, 'attractions')
+                    $('#channel-text').text('全台趴趴走').addClass('fadein').removeClass('fadeout')
+
+                }
+                // 啟動計時器(只要電視是開啟的狀態都會啟動計時器)
+                timer = setInterval(function () {
+                    seconds++
+                    if (seconds > 59) {
+                        seconds = 0
+                        minutes++
+                    }
+                    $('#time-text').text(String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0'))
+                }, 1000)
+            }
+            // 開關電視會播放開關的音效
+            $('#tvsound')[0].currentTime = 0
+            $('#tvsound')[0].play()
+            // 開關電視的css動畫效果
+            if ($('#screen').hasClass('turnon')) {
+                $('#screen').removeClass('turnon')
+                $('#screen').addClass('turnoff')
+            } else {
+                $('#screen').removeClass('turnoff')
+                $('#screen').addClass('turnon')
+            }
+        })
+        // 用來控制電視頻道為食物或是景點的按鈕
+        $('#mode-circle').click(function () {
+            $('#again').css('display', 'none')
+            $('#modemp3')[0].currentTime = 0
+            $('#modemp3')[0].play()
+            // 只要切換頻道都會把秒和分歸零再重新計時
+            clearInterval(timer)
+            seconds = 0
+            minutes = 0
+            $('#time-text').text('00:00')
+
+            // 只要點選這顆按鈕都會讓i和tvmode 各自 +1
+            // i用以控制旋轉的角度，如此一來transition的效果會比較順暢
+            i++
+            tvmode++
+            $('#mode').css('transform', 'translate(-50%, -50%) rotate(' + 90 * i + 'deg)')
+            // 這台電是只有兩個頻道(tvmode)，0(食物)和1(景點)
+            // 所以當tvmode加到最後比1大時，會重置為0
+            // 並改變rotate的角度
+            if (tvmode > 1) {
+                tvmode = 0
+                $('#mode').css('transform', 'translate(-50%, -50%) rotate(' + 90 * i + 'deg)')
+            }
+            // 只有在電視是打開的狀態下，tvmode的改變才會出現卡牌並更換卡牌種類
+            if (tv === 'open') {
+                timer = setInterval(function () {
+                    seconds++
+                    if (seconds > 59) {
+                        seconds = 0
+                        minutes++
+                    }
+                    $('#time-text').text(String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0'))
+                }, 1000)
+                if (tvmode === 0) {
+                    $('#channel-text').text('台灣美食趣')
+                    $('#game .card').remove()
+                    random(17, 'food')
+                } else if (tvmode === 1) {
+                    $('#channel-text').text('全台趴趴走')
+                    $('#game .card').remove()
+                    random(19, 'attractions')
+                }
+            }
+
+        })
+        // 遊戲結束後的再來一次按鈕
+        $('#again').click(function () {
+            $('#again').css('display', 'none')
+            timer = setInterval(function () {
+                seconds++
+                if (seconds > 59) {
+                    seconds = 0
+                    minutes++
+                }
+                $('#time-text').text(String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0'))
+            }, 1000)
+            if (tvmode === 0) {
+                random(17, 'food')
+            } else {
+                random(19, 'attractions')
+            }
+        })
+        // 音樂按鈕
+        $('#background-music').click(function () {
+            // 如果是 checked 狀態才會播放音樂
+            if ($('#background-music').is(':checked')) {
+                $('#music')[0].currentTime = 0
+                $('#music').attr('src', `./music/${musicList[musicCount]}.mp3`)
+                $('#music')[0].play()
+                $('#broken')[0].play()
+            } else {
+                // 否則停止播放並將音樂時間軸歸零
+                $('#music')[0].currentTime = 0
+                $('#music')[0].pause()
+                $('#broken')[0].pause()
+
+            }
+        })
+        $('#left-music').click(function () {
+            musicCount--
+            if (musicCount < 0) {
+                musicCount = 0
+                if ($('#background-music').is(':checked')) {
+                    $('#music')[0].currentTime = 0
+                    $('#music').attr('src', `./music/${musicList[musicCount]}.mp3`)
+                    $('#music')[0].play()
+                    $('#broken')[0].play()
+                }
+            } else {
+                if ($('#background-music').is(':checked')) {
+                    $('#music')[0].currentTime = 0
+                    $('#music').attr('src', `./music/${musicList[musicCount]}.mp3`)
+                    $('#music')[0].play()
+                    $('#broken')[0].play()
+                }
+            }
+        })
+        $('#right-music').click(function () {
+            musicCount++
+            if (musicCount > 4) {
+                musicCount = 4
+                if ($('#background-music').is(':checked')) {
+                    $('#music')[0].currentTime = 0
+                    $('#music').attr('src', `./music/${musicList[musicCount]}.mp3`)
+                    $('#music')[0].play()
+                    $('#broken')[0].play()
+
+                }
+            } else {
+                if ($('#background-music').is(':checked')) {
+                    $('#music')[0].currentTime = 0
+                    $('#music').attr('src', `./music/${musicList[musicCount]}.mp3`)
+                    $('#music')[0].play()
+                    $('#broken')[0].play()
+                }
+            }
+        })
+
+        $('#game').on('click', '.card', function () {
+            //
+            $('#click')[0].currentTime = 0
+            $('#click')[0].play()
+            if (
+                // 如果還沒翻開兩張
+                $('.card:not(.card-close)').length < 2 &&
+                // 且這張牌還沒翻開
+                $(this).hasClass('card-close') &&
+                // 且這張牌還沒配對
+                !$(this).hasClass('card-ok')) {
+                $(this).removeClass('card-close')
+            }
+            // 如果翻開兩張了
+            if ($('.card:not(.card-close)').length === 2) {
+                // 檢查數字是否一樣
+                if ($('.card:not(.card-close)').eq(0).attr('data-card') ===
+                    $('.card:not(.card-close)').eq(1).attr('data-card')
+                ) {
+                    $('.card:not(.card-close)').addClass('card-ok')
+                    $('.card:not(.card-close)').fadeTo(1000, 0)
+                }
+                // 不管數字是否一樣都翻回來
+                setTimeout(function () {
+                    $('.card:not(.card-close)').addClass('card-close')
+                    if ($('.card-ok').length === $('.card').length) {
+                        $('#eyes').css('display', 'block').addClass('fadein').removeClass('fadeout')
+                        if (tvmode === 0) {
+                            first = true
+                        } else {
+                            second = true
+                        }
+                        if (first === true && second === true) {
+                            Swal.fire({
+                                html: `<div class="align-left">你花了${minutes}分${seconds}秒完成另一個遊戲，這是最耗一個遊戲了。<br>空氣中傳來隱隱的躁動，你能感覺到祂很開心...因為很久沒有人來陪祂玩了<br><br>嗯？為什麼我會知道這件事...？</div>`,
+                                confirmButtonText: '掰掰'
+                            }).then(function () {
+                                window.close()
+                            })
+                        } else {
+                            Swal.fire({
+                                html: `<div class="align-left">你花了${minutes}分${seconds}秒完成這個遊戲，房間依然一片死寂，似乎沒有任何改變。</div>`,
+                                confirmButtonText: '...？'
+                            }).then(function () {
+                                $('#eyes').addClass('fadeout').removeClass('fadein')
+                            }).finally(function () {
+                                Swal.fire({
+                                    html: `...剛剛？錯覺嗎？`,
+                                    confirmButtonText: '......'
+                                })
+                            })
+
+                        }
+
+                        clearInterval(timer)
+                        $('#game .card').remove()
+                        seconds = 0
+                        minutes = 0
+                        $('#time-text').text('00:00')
+                        $('#again').css('display', 'block')
+                    }
+                }, 1000)
+            }
+        })
+
+    </script>
+</body>
+
+</html>
